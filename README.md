@@ -37,7 +37,7 @@ Firebird (9 таблиц)  →  ETL (Python)  →  ClickHouse (6 таблиц)  
 
 ```bash
 # 1. Клонирование
-git clone https://github.com/YOUR_USERNAME/struna-analytics.git
+git clone https://github.com/sempad-itm/struna_analytics.git
 cd struna-analytics
 
 # 2. Запуск инфраструктуры

@@ -1,4 +1,5 @@
-**Цель:** Схема целевого хранилища данных в ClickHouse после миграции из Firebird.  
+**Цель:** Построение аналитического слоя на основе данных из системы «Струна-5». Исходная БД продолжает работать — данные копируются в ClickHouse для удобных отчётов и дашбордов.
+
 **Принципы:** Минимализм, денормализация для аналитики, безопасность данных.
 
 ## Общая информация
@@ -15,14 +16,16 @@
 ## Архитектура DWH
 
  DIMENSIONS (3 таблицы, денормализованы)
-• dim_objects       — объекты (DEFOBJ + 3 справочника)
-• dim_event_types   — типы событий (MESS + MESS_CAT)
-• dim_outcomes      — исходы инцидентов (OTVET) 
+
+- dim_objects       — объекты (DEFOBJ + 3 справочника)
+- dim_event_types   — типы событий (MESS + MESS_CAT)
+- dim_outcomes      — исходы инцидентов (OTVET) 
 
 FACTS (3 таблицы)
-• raw_events        — события (~650K записей)
-• raw_alarms        — инциденты (~67K записей)
-• fact_alarm_events — связка (~123K записей) 
+
+- raw_events        — события (~650K записей)
+- raw_alarms        — инциденты (~67K записей)
+- fact_alarm_events — связка (~123K записей) 
 
 **Исходные таблицы:** 9 → **Целевые таблицы:** 6 (денормализация справочников)
 
@@ -34,9 +37,9 @@ FACTS (3 таблицы)
 
 |Поле|Тип|Источник|Описание|
 |---|---|---|---|
-|`object_id_anon`|String|SHA256(GRP-MDM)[:8]|🔑 Анонимный ключ объекта|
-|`object_name`|Nullable(String)|DEFOBJ.NAIMOBJ|Название объекта (⚠️ маскировка ПДн)|
-|`address`|Nullable(String)|DEFOBJ.ADROBJ|Адрес (⚠️ маскировка ПДн)|
+|`object_id_anon`|String|SHA256(GRP-MDM)[:8]|Анонимный ключ объекта|
+|`object_name`|Nullable(String)|DEFOBJ.NAIMOBJ|Название объекта (маскировка ПДн)|
+|`address`|Nullable(String)|DEFOBJ.ADROBJ|Адрес (маскировка ПДн)|
 |`client_id`|UInt32|DEFOBJ.KODORG|Код организации|
 |`kateg_code`|UInt8|DEFOBJ.KATEG|Код категории (0/1/2)|
 |`kateg_name`|Nullable(String)|PROPERTY.PROPERTY|Название категории|
@@ -63,7 +66,7 @@ ORDER BY (object_id_anon)
 
 | Поле            | Тип              | Источник       | Описание           |
 | --------------- | ---------------- | -------------- | ------------------ |
-| `mess_low`      | UInt8            | MESS.MESSLOW   | 🔑 Код события     |
+| `mess_low`      | UInt8            | MESS.MESSLOW   | Код события        |
 | `alarm_mess`    | Nullable(String) | MESS.ALARMMESS | Описание события   |
 | `category_id`   | UInt8            | MESS.CATEGORY  | Код категории      |
 | `category_name` | Nullable(String) | MESS_CAT.NAME  | Название категории |
@@ -83,7 +86,7 @@ ORDER BY (mess_low)
 
 |Поле|Тип|Источник|Описание|
 |---|---|---|---|
-|`result_code`|Int16|OTVET.KOD|🔑 Код исхода|
+|`result_code`|Int16|OTVET.KOD|Код исхода|
 |`result_description`|Nullable(String)|OTVET.OTVET|Описание исхода|
 |`loaded_at`|DateTime|ETL|Время загрузки|
 
@@ -102,10 +105,10 @@ ORDER BY (result_code)
 
 |Поле|Тип|Источник|Описание|
 |---|---|---|---|
-|`event_id`|UInt32|DATA.EVENTID|🔑 Уникальный ID события|
-|`object_id_anon`|String|SHA256(GRP-MDM)|🔗 Ключ объекта (FK → dim_objects)|
+|`event_id`|UInt32|DATA.EVENTID|Уникальный ID события|
+|`object_id_anon`|String|SHA256(GRP-MDM)|Ключ объекта (FK → dim_objects)|
 |`dttm`|DateTime|DATA.DTTM|Время события на объекте|
-|`mess_low`|UInt8|DATA.MESSLOW|🔗 Тип события (FK → dim_event_types)|
+|`mess_low`|UInt8|DATA.MESSLOW|Тип события (FK → dim_event_types)|
 |`has_object_ref`|UInt8|ETL|1=объект в справочнике, 0=сирота|
 |`loaded_at`|DateTime|ETL|Время загрузки|
 
@@ -128,13 +131,13 @@ ORDER BY (event_id)
 
 |Поле|Тип|Источник|Описание|
 |---|---|---|---|
-|`alarm_id`|UInt32|ALARM.ALARMID|🔑 Уникальный ID инцидента|
-|`object_id_anon`|String|SHA256(GRP-MDM)|🔗 Ключ объекта (FK → dim_objects)|
+|`alarm_id`|UInt32|ALARM.ALARMID|Уникальный ID инцидента|
+|`object_id_anon`|String|SHA256(GRP-MDM)|Ключ объекта (FK → dim_objects)|
 |`created`|DateTime|ALARM.CREATED|Создание инцидента (100%)|
 |`closed_at`|DateTime|ALARM.PROCESSED|Закрытие инцидента (100%)|
 |`dispatched_at`|Nullable(DateTime)|ALARM.SENT|Отправка наряда (~3.5%)|
 |`arrived_at`|Nullable(DateTime)|ALARM.ARRIVED|Прибытие группы (~2.4%)|
-|`result_code`|Nullable(Int16)|ALARM.RESULT|🔗 Исход (FK → dim_outcomes)|
+|`result_code`|Nullable(Int16)|ALARM.RESULT|Исход (FK → dim_outcomes)|
 |`loaded_at`|DateTime|ETL|Время загрузки|
 
 **Движок:**
@@ -155,8 +158,8 @@ ORDER BY (alarm_id)
 
 |Поле|Тип|Источник|Описание|
 |---|---|---|---|
-|`event_id`|UInt32|ALARM_EVENT.EVENTID|🔗 FK → raw_events|
-|`alarm_id`|UInt32|ALARM_EVENT.ALARMID|🔗 FK → raw_alarms|
+|`event_id`|UInt32|ALARM_EVENT.EVENTID|FK → raw_events|
+|`alarm_id`|UInt32|ALARM_EVENT.ALARMID|FK → raw_alarms|
 |`loaded_at`|DateTime|ETL|Время загрузки|
 
 **Движок:**

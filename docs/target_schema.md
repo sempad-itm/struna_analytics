@@ -175,7 +175,7 @@ ORDER BY (alarm_id, event_id)
 
 ## Схема связей
 
-[[Схема_связей_clickhouse]]
+![schema_clickhouse](screenshots/schema_clickhouse.png)
 
 ## ETL: Порядок загрузки
 

@@ -20,9 +20,7 @@
 
 ## 🏗️ Архитектура
 
-```
-Firebird (9 таблиц)  →  ETL (Python)  →  ClickHouse (6 таблиц)  →  Metabase
-```
+![Architecture](screenshots/architecture.png)
 
 **Ключевые решения:**
 

@@ -119,7 +119,7 @@ DEFOBJ.BLKHARDWARE → SP_BLKHARD.BLKHARDWARE (название оборудов
 
 ### Схема связей
 
-[[Схема_связей_legacy]]
+![schema_legacy](screenshots/schema_legacy.png)
 
 ## Data Quality:
 

@@ -1,0 +1,4 @@
+pandas>=2.0.0              # Работа с данными
+clickhouse-connect>=0.7.0  # Подключение к ClickHouse
+firebirdsql>=1.0.0         # Подключение к Firebird
+python-dotenv>=1.0.0       # Переменные окружения (.env)

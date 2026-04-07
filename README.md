@@ -41,14 +41,27 @@ cd struna-analytics
 # 2. Запуск инфраструктуры
 docker-compose up -d
 
-# 3. Создание таблиц
+# 3. Добавление исходных данных 
+Положите ваш архив базы данных (`.fbk`) в папку `./data/firebird/`:
+
+# Пример: скопируйте ваш файл и переименуйте для удобства
+cp ~/путь/к/архиву/имя_файла.fbk ./data/firebird/struna_backup.fbk
+
+# 4. Восстановление базы Firebird из архива
+
+# Выполните восстановление внутри контейнера:
+docker exec -it struna-firebird bash -c \
+  "/opt/firebird/bin/gbak -c -v -user sysdba -password masterkey /db/struna_backup.fbk /db/struna.fdb"
+
+# 5. Создание таблиц
 docker-compose exec clickhouse clickhouse-client < sql/create_tables.sql
 
-# 4. Загрузка данных
+# 6. Загрузка данных
 cd etl && pip install -r requirements.txt && python src/load_data.py
 
 # 5. Дашборды
-open http://localhost:3000  # Metabase
+Откройте в браузере:
+- **Metabase**: http://localhost:3000
 ```
 
 ---

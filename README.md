@@ -54,7 +54,7 @@ docker exec -it struna-firebird bash -c \
   "/opt/firebird/bin/gbak -c -v -user sysdba -password masterkey /db/struna_backup.fbk /db/struna.fdb"
 
 # 5. Создание таблиц
-docker-compose exec clickhouse clickhouse-client < sql/create_tables.sql
+docker-compose exec -T clickhouse clickhouse-client --multiquery < sql/create_tables.sql
 
 # 6. Загрузка данных
 cd etl && pip install -r requirements.txt && python src/load_data.py

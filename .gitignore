@@ -1,0 +1,34 @@
+# Secrets
+.env
+
+# Database files
+*.fdb
+*.fbk
+data/
+!data/.gitkeep
+
+# Docker volumes (ClickHouse, Metabase data)
+clickhouse_data/
+metabase_data/
+metabase/
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

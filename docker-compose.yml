@@ -1,0 +1,64 @@
+services:
+  # Firebird: источник данных (копия БД)
+  firebird:
+    image: dcms/firebird-docker:2.5.6
+    container_name: struna-firebird
+    ports:
+      - "3050:3050"
+    environment:
+      SYSDBAPASS: masterkey
+    volumes:
+      - ./data/firebird:/db
+    restart: unless-stopped
+    networks:
+      - struna-net
+
+  # ClickHouse: аналитическое хранилище
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: struna-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_USER: analytics
+      CLICKHOUSE_PASSWORD: analytics
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    depends_on:
+      - firebird
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - struna-net
+
+  # Metabase: визуализация
+  metabase:
+    image: metabase/metabase:v0.54.x
+    container_name: struna-metabase
+    ports:
+      - "3000:3000"
+    environment:
+      MB_JAVA_TIMEZONE: Europe/Moscow
+      MB_DB_FILE: /metabase-data/metabase.db
+    volumes:
+      - metabase_data:/metabase-data
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - struna-net
+
+networks:
+  struna-net:
+
+volumes:
+  clickhouse_data:
+  metabase_data:

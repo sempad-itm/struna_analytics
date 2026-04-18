@@ -44,7 +44,7 @@ ORDER BY (mess_low);
 -- 3. dim_outcomes (исходы инцидентов)
 CREATE TABLE IF NOT EXISTS dim_outcomes
 (
-    result_code          Int16,
+    result_code          Int8,
     result_description   Nullable(String),
     loaded_at            DateTime DEFAULT now()
 )

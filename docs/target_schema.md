@@ -46,7 +46,7 @@ FACTS (3 таблицы)
 |`tipoobj`|Nullable(String)|DEFOBJ.TIPOBJ|Детальный тип|
 |`guard_code`|UInt8|DEFOBJ.GUARD|Код статуса охраны|
 |`status_name`|Nullable(String)|SP_STATUS.STATUS|Название статуса|
-|`hardware_code`|Nullable(String)|DEFOBJ.BLKHARDWARE|Код оборудования|
+|`hardware_code`|Nullable(UInt8)|DEFOBJ.BLKHARDWARE|Код оборудования|
 |`hardware_name`|Nullable(String)|SP_BLKHARD.DESCR|Название оборудования|
 |`created_date`|Nullable(Date)|DEFOBJ.CREATED|Дата создания карточки|
 |`contract_date`|Nullable(Date)|DEFOBJ.DATAZAKL|Дата договора|

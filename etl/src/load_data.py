@@ -3,35 +3,61 @@ import numpy as np
 import firebirdsql
 import clickhouse_connect
 import os
+import warnings
+from pathlib import Path
+from dotenv import load_dotenv
 from datetime import datetime
 
 from privacy import get_anon_id, mask_org_name, normalize_address_text, mask_address
 
+warnings.filterwarnings('ignore', message='pandas only supports SQLAlchemy')
+
 # Конфиги:
+CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
 
-FB_CONFIG = {
-    'host': 'localhost',
-    'port': 3050,
-    'database': './data/firebird/struna.fdb',
-    'user': 'SYSDBA',
-    'password': 'masterkey',
-    'charset': 'WIN1251'
-}
+ENV_PATH = CURRENT_SCRIPT_DIR.parent / ".env"
 
-CH_CONFIG = {
-    'host': 'localhost',
-    'port': 8123,
-    'user': 'analytics',
-    'password': 'analytics',
-    'database': 'struna_analytics'
-}
+load_dotenv()
+
+def get_env_var(name: str, required: bool = True) -> str:
+    """Получает переменную из окружения. Если required=True и переменной нет — ошибка."""
+    value = os.getenv(name)
+    if required and not value:
+        raise ValueError(f"Обязательная переменная окружения {name} не задана. Проверь файл .env")
+    return value
+
+FB_HOST = get_env_var('FIREBIRD_HOST')
+FB_PORT = int(get_env_var('FIREBIRD_PORT'))
+FB_USER = get_env_var('FIREBIRD_USER')
+FB_PASSWORD = get_env_var('FIREBIRD_PASSWORD')
+FB_DB_PATH = get_env_var('FIREBIRD_DB_PATH')
+FB_CHARSET = get_env_var('FIREBIRD_CHARSET', required=False) or 'UTF8'
+
+CH_HOST = get_env_var('CLICKHOUSE_HOST')
+CH_PORT = int(get_env_var('CLICKHOUSE_PORT'))
+CH_USER = get_env_var('CLICKHOUSE_USER')
+CH_PASSWORD = get_env_var('CLICKHOUSE_PASSWORD')
+CH_DATABASE = get_env_var('CLICKHOUSE_DATABASE')
 
 # Подключение:
 
 print("🔌 Подключение к базам данных...")
 try:
-    fb = firebirdsql.connect(**FB_CONFIG)
-    ch = clickhouse_connect.get_client(**CH_CONFIG)
+    fb = firebirdsql.connect(
+        host=FB_HOST,
+        port=FB_PORT,
+        user=FB_USER,
+        password=FB_PASSWORD,
+        database=FB_DB_PATH,
+        charset=FB_CHARSET
+    )
+    ch = clickhouse_connect.get_client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DATABASE
+    )
     print("✅ Успешно подключено.")
 except Exception as e:
     print(f"❌ Ошибка подключения: {e}")
@@ -144,7 +170,7 @@ df_events['mess_low'] = pd.to_numeric(df_events['mess_low'], errors='coerce').as
 df_events['loaded_at'] = datetime.now()
 
 
-print("📊 [5/6] Загрузка raw_alarms...")
+print("[5/6] Загрузка raw_alarms...")
 
 sql_alarms = """
     select ALARMID, GRP, MDM, CREATED, PROCESSED, SENT, ARRIVED, RESULT
@@ -168,7 +194,7 @@ df_alarms['result_code'] = pd.to_numeric(df_alarms['result_code'], errors='coerc
 df_alarms['loaded_at'] = datetime.now()
 
 
-print("🔗 [6/6] Загрузка fact_alarm_events...")
+print("[6/6] Загрузка fact_alarm_events...")
 
 # Берем минимум ID из загруженных алармов, чтобы не грузить лишний мусор
 min_alarm_id = int(df_alarms['alarm_id'].min())
@@ -188,7 +214,7 @@ df_alarm_events['loaded_at'] = datetime.now()
 
 # Вставка в кликхаус
 
-print("💾 Вставка данных в ClickHouse...")
+print("Вставка данных в ClickHouse...")
 
 try:
     ch.insert_df('dim_objects', df_defobj)
@@ -205,4 +231,4 @@ except Exception as e:
 
 finally:
     fb.close()
-    print("🔌 Соединения закрыты.")
+    print("Соединения закрыты.")
